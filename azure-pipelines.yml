@@ -1,10 +1,10 @@
 trigger:
   branches:
     include:
-      - main  # Runs when the main branch is updated
+      - main
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use 'macOS-latest' for iOS
+  vmImage: 'ubuntu-latest'
 
 steps:
 
@@ -15,21 +15,35 @@ steps:
     channel: 'stable'
     version: 'latest'
 
-# STEP 2: Verify Flutter & Install Dependencies
-# ----------------------------------------
+# STEP 2: Update AGP & Gradle before building
 - script: |
-    export PATH="$FLUTTER_HOME/bin:$PATH"    # Tell where is the flutter binary so you can run flutter commands
+    echo "Updating Android Gradle Plugin (AGP) and Gradle version..."
+    
+    # Update AGP in android/build.gradle
+    sed -i 's/com.android.tools.build:gradle:[0-9.]*/com.android.tools.build:gradle:8.1.0/' android/build.gradle
+    
+    # Update Gradle wrapper in android/gradle-wrapper.properties
+    sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0-bin.zip|' android/gradle-wrapper.properties
+    
+    # Verify changes
+    cat android/build.gradle | grep "com.android.tools.build:gradle"
+    cat android/gradle-wrapper.properties | grep "distributionUrl"
+  displayName: 'Update AGP & Gradle'
+
+# STEP 3: Verify Flutter & Install Dependencies
+- script: |
+    export PATH="$FLUTTER_HOME/bin:$PATH"
     flutter --version
     flutter pub get
   displayName: 'Setup Flutter & Run Diagnostics'
 
-# STEP 3: Build APK
-# ----------------------------------------
+# STEP 4: Build APK
 - task: FlutterBuild@0
   inputs:
     target: 'apk'
     projectDirectory: '.'
 
+# STEP 5: Publish APK
 - task: CopyFiles@2
   inputs:
     SourceFolder: 'build/app/outputs/flutter-apk/'
@@ -38,10 +52,6 @@ steps:
 
 - task: PublishBuildArtifacts@1
   inputs:
-
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'release-apk'
-    publishLocation: 'Container'              # Publish to Azure DevOps artifact storage (the built-in file store for your project).
-
-
-    
+    publishLocation: 'Container'
