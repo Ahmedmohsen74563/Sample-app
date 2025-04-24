@@ -76,5 +76,5 @@ stages:
             npm install -g firebase-tools
             firebase appdistribution:distribute "$(Pipeline.Workspace)/release-apk/app-release.apk" \
               --app "$(FIREBASE_APP_ID)" \
-              --service-credentials "$(downloadFirebaseKey.secureFilePath)"
+              --service-account-json "$(firebaseKey.secureFilePath)"
           displayName: 'Deploy to Firebase App Distribution'
