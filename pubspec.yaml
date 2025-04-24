@@ -17,9 +17,7 @@ dependencies:
 
 dev_dependencies:
   analysis_defaults:
-    git:
-      url: https://github.com/flutter/samples/tree/main/analysis_defaults
-      ref: main
+    path: analysis_defaults
   flutter_test:
     sdk: flutter
 
