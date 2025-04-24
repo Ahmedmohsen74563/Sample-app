@@ -15,6 +15,17 @@ steps:
     channel: 'stable'
     version: 'latest'
 
+# STEP 2: FORCE compileSdkVersion to 34 (Critical Fix)
+- script: |
+    echo "Setting compileSdkVersion to 34 in android/app/build.gradle..."
+    sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' android/app/build.gradle
+    
+    # Verify change
+    grep "compileSdkVersion" android/app/build.gradle || exit 1
+    echo "Updated compileSdkVersion:"
+    cat android/app/build.gradle | grep "compileSdkVersion"
+  displayName: 'Fix compileSdkVersion'
+
 # STEP 2: Verify Flutter & Install Dependencies
 # ----------------------------------------
 - script: |
@@ -25,18 +36,18 @@ steps:
 
 # STEP 3: Build APK
 # ----------------------------------------
-- script: |
-    export PATH="$FLUTTER_HOME/bin:$PATH"
-    flutter build apk --release  # For Android
-    # flutter build ios --release --no-codesign  # For iOS (uncomment if needed)
-  displayName: 'Build Release App'
-  
+#- script: |
+#    export PATH="$FLUTTER_HOME/bin:$PATH"
+#    flutter build apk --release  # For Android
+#    # flutter build ios --release --no-codesign  # For iOS (uncomment if needed)
+#  displayName: 'Build Release App'
+
 # STEP 3: Build APK
 # ----------------------------------------
-#- task: FlutterBuild@0
- # inputs:
- #   target: 'apk'
- #   projectDirectory: '.'
+- task: FlutterBuild@0
+  inputs:
+    target: 'apk'
+    projectDirectory: '.'
 
 - task: CopyFiles@2
   inputs:
