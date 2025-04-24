@@ -21,12 +21,8 @@ steps:
     export PATH="$FLUTTER_HOME/bin:$PATH"    # Tell where is the flutter binary so you can run flutter commands
     flutter --version
     flutter doctor --android-licenses -v  # ✅ Run doctor for diagnostics
-  displayName: ' Run Diagnostics'
-
-- script: |
-    export PATH="$FLUTTER_HOME/bin:$PATH"
     flutter pub get
-  displayName: 'Setup Flutter'  
+  displayName: 'Setup Flutter & Run Diagnostics'
 
 # STEP 3: Build APK
 # ----------------------------------------
