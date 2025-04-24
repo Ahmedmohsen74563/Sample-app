@@ -72,12 +72,13 @@ stages:
 
         - script: |
             npm install -g firebase-tools
+            # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the downloaded service account file
+            export GOOGLE_APPLICATION_CREDENTIALS="$(downloadFirebaseKey.secureFilePath)"
             
-            # Distribute with service account
+            # Deploy the APK to Firebase App Distribution
             firebase appdistribution:distribute \
-              "build/app/outputs/flutter-apk/app-release.apk" \
-              --app "$(FIREBASE_APP_ID)" \
-              --service-account-credential-path "$(firebaseKey.secureFilePath)"
+              "$(Pipeline.Workspace)/release-apk/app-release.apk" \
+              --app "$(FIREBASE_APP_ID)"
           env:
-            GOOGLE_APPLICATION_CREDENTIALS: $(firebaseKey.secureFilePath) # For other Firebase tools
+            GOOGLE_APPLICATION_CREDENTIALS: "$(downloadFirebaseKey.secureFilePath)"  # For other Firebase tools
           displayName: 'Deploy to Firebase'
