@@ -38,7 +38,7 @@ stages:
         # Build iOS IPA
         - script: |
             export PATH="$FLUTTER_HOME/bin:$PATH"
-            flutter build ipa --release --no-codesign
+            flutter build ipa --no-codesign
           displayName: 'Build iOS IPA'
 
         # Copy artifacts
