@@ -42,13 +42,28 @@ stages:
           displayName: 'Build iOS IPA'
 
         # Copy artifacts
+        - script: |
+            echo "Listing contents of the build directory"
+            find build/ -name "*.ipa"  # This will search for the .ipa file
+          displayName: 'Find .ipa location'
+
+        # Capture the dynamic path of the .ipa
+        - script: |
+            # Find the .ipa file dynamically and set it as an environment variable
+            IPA_PATH=$(find build/ -name "*.ipa" | head -n 1)
+            echo "Found .ipa at: $IPA_PATH"
+            echo "##vso[task.setvariable variable=IPA_PATH]$IPA_PATH"
+          displayName: 'Set IPA Path'
+
+        # Copy the found IPA to artifact staging directory
         - task: CopyFiles@2
           inputs:
-            SourceFolder: 'build/ios/iphoneos/'  # Changed to iphoneos where Flutter usually outputs the ipa
+            SourceFolder: $(IPA_PATH)  # Using the dynamic IPA path found earlier
             Contents: '*.ipa'
             TargetFolder: '$(Build.ArtifactStagingDirectory)'
           displayName: 'Copy IPA to Staging'
           
+                  
         # Publish IPA
         - task: PublishBuildArtifacts@1
           inputs:
