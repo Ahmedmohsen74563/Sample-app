@@ -103,7 +103,7 @@ stages:
             
             firebase appdistribution:distribute \
               "$IPA_PATH" \
-              --app "$(FIREBASE_IOS_APP_ID)" \
+              --app "$(FIREBASE_APP_ID)" \
               --release-notes "iOS build $(Build.BuildNumber)"
           env:
             GOOGLE_APPLICATION_CREDENTIALS: "$(downloadFirebaseKey.secureFilePath)"
