@@ -1,4 +1,4 @@
-explain in detail : trigger:
+trigger:
   branches:
     include:
       - main
