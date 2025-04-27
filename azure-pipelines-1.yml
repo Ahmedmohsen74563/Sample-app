@@ -1,0 +1,56 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'macOS-latest'  # iOS builds require macOS
+
+stages:
+
+# =========================
+# STAGE 1: Build IPA
+# =========================
+- stage: Build
+  jobs:
+    - job: BuildIPA
+      steps:
+        # Install Flutter
+        - task: FlutterInstall@0
+          inputs:
+            mode: 'auto'
+            channel: 'stable'
+            version: 'latest'
+
+        # Setup Flutter environment
+        - script: |
+            export PATH="$FLUTTER_HOME/bin:$PATH"
+            flutter --version
+            flutter pub get
+          displayName: 'Setup Flutter & Run Diagnostics'
+
+        # Install CocoaPods (required for iOS)
+        - script: |
+            sudo gem install cocoapods
+            pod --version
+          displayName: 'Install CocoaPods'
+
+        # Build iOS IPA
+        - script: |
+            export PATH="$FLUTTER_HOME/bin:$PATH"
+            flutter build ipa --release --no-codesign
+          displayName: 'Build iOS IPA'
+
+        # Copy artifacts
+        - task: CopyFiles@2
+          inputs:
+            SourceFolder: 'build/ios/ipa/'
+            Contents: '*.ipa'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+        # Publish IPA
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'release-ipa'
+            publishLocation: 'Container'
