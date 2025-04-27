@@ -70,3 +70,41 @@ stages:
             PathtoPublish: '$(Build.ArtifactStagingDirectory)'
             ArtifactName: 'release-ipa'
             publishLocation: 'Container'
+
+# =========================
+# STAGE 2: Deploy to Firebase
+# =========================
+- stage: Deploy
+  dependsOn: Build
+  jobs:
+    - job: FirebaseDeploy
+      steps:
+        # Download Firebase service account
+        - task: DownloadSecureFile@1
+          name: downloadFirebaseKey
+          inputs:
+            secureFile: 'firebase-service-account.json'
+
+        # Download built IPA
+        - task: DownloadBuildArtifacts@0
+          inputs:
+            buildType: 'current'
+            downloadType: 'single'
+            artifactName: 'release-ipa'
+            downloadPath: '$(Pipeline.Workspace)'
+
+        # Distribute to Firebase App Distribution
+        - script: |
+            npm install -g firebase-tools
+            export GOOGLE_APPLICATION_CREDENTIALS="$(downloadFirebaseKey.secureFilePath)"
+            
+            # Find the .ipa file (name may vary slightly)
+            IPA_PATH=$(find "$(Pipeline.Workspace)/release-ipa" -name "*.ipa" | head -1)
+            
+            firebase appdistribution:distribute \
+              "$IPA_PATH" \
+              --app "$(FIREBASE_IOS_APP_ID)" \
+              --release-notes "iOS build $(Build.BuildNumber)"
+          env:
+            GOOGLE_APPLICATION_CREDENTIALS: "$(downloadFirebaseKey.secureFilePath)"
+          displayName: 'Deploy to Firebase'
