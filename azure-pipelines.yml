@@ -22,12 +22,6 @@ stages:
             version: 'latest'
 
         - script: |
-            echo "Setting compileSdkVersion to 34 in android/app/build.gradle..."
-            sed -i 's/compileSdkVersion .*/compileSdkVersion 34/' android/app/build.gradle
-            grep "compileSdkVersion" android/app/build.gradle || exit 1
-          displayName: 'Fix compileSdkVersion'
-
-        - script: |
             export PATH="$FLUTTER_HOME/bin:$PATH"
             flutter --version
             flutter pub get
