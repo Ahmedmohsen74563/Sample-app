@@ -44,10 +44,11 @@ stages:
         # Copy artifacts
         - task: CopyFiles@2
           inputs:
-            SourceFolder: 'build/ios/ipa/'
+            SourceFolder: 'build/ios/iphoneos/'  # Changed to iphoneos where Flutter usually outputs the ipa
             Contents: '*.ipa'
             TargetFolder: '$(Build.ArtifactStagingDirectory)'
-
+          displayName: 'Copy IPA to Staging'
+          
         # Publish IPA
         - task: PublishBuildArtifacts@1
           inputs:
