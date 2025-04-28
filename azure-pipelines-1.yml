@@ -5,7 +5,10 @@ trigger:
 
 pool:
   vmImage: 'macOS-latest'  # iOS builds require macOS
-
+  
+variables:
+  - group: AppDistributionSecrets
+  
 stages:
 
 # =========================
@@ -28,83 +31,35 @@ stages:
             flutter --version
             flutter pub get
           displayName: 'Setup Flutter & Run Diagnostics'
-
-        # Install CocoaPods (required for iOS)
-        - script: |
-            sudo gem install cocoapods
-            pod --version
-          displayName: 'Install CocoaPods'
-
+        
+        # Install Apple Distribution Certificate
+        - task: InstallAppleCertificate@2
+          inputs:
+            certSecureFile: 'Distripution Certificates.p12'  
+            certPwd: $(certificate_pass)
+        
+        # Install Apple Provisioning Profile
+        - task: InstallAppleProvisioningProfile@1
+          inputs:
+            provisioningProfileLocation: 'secureFiles'  
+            provProfileSecureFile: 'Pipeline_test_ADHOC.mobileprovision'  
+                
         # Build iOS IPA
         - script: |
             export PATH="$FLUTTER_HOME/bin:$PATH"
-            flutter build ipa --no-codesign
+            flutter build ipa --release 
           displayName: 'Build iOS IPA'
 
-        # Copy artifacts
-        - script: |
-            echo "Listing contents of the build directory"
-            find build/ -name "*.ipa"  # This will search for the .ipa file
-          displayName: 'Find .ipa location'
-
-        # Capture the dynamic path of the .ipa
-        - script: |
-            # Find the .ipa file dynamically and set it as an environment variable
-            IPA_PATH=$(find build/ -name "*.ipa" | head -n 1)
-            echo "Found .ipa at: $IPA_PATH"
-            echo "##vso[task.setvariable variable=IPA_PATH]$IPA_PATH"
-          displayName: 'Set IPA Path'
-
-        # Copy the found IPA to artifact staging directory
+        # Copy artifacts (ipa file)
         - task: CopyFiles@2
           inputs:
-            SourceFolder: $(IPA_PATH)  # Using the dynamic IPA path found earlier
-            Contents: '*.ipa'
+            SourceFolder: '$(Build.SourcesDirectory)/build/ios/ipa'  
+            Contents: '**/*.ipa'  
             TargetFolder: '$(Build.ArtifactStagingDirectory)'
-          displayName: 'Copy IPA to Staging'
-          
-                  
-        # Publish IPA
+
+        # Publish IPA as artifact
         - task: PublishBuildArtifacts@1
           inputs:
             PathtoPublish: '$(Build.ArtifactStagingDirectory)'
             ArtifactName: 'release-ipa'
             publishLocation: 'Container'
-
-# =========================
-# STAGE 2: Deploy to Firebase
-# =========================
-- stage: Deploy
-  dependsOn: Build
-  jobs:
-    - job: FirebaseDeploy
-      steps:
-        # Download Firebase service account
-        - task: DownloadSecureFile@1
-          name: downloadFirebaseKey
-          inputs:
-            secureFile: 'firebase-service-account.json'
-
-        # Download built IPA
-        - task: DownloadBuildArtifacts@0
-          inputs:
-            buildType: 'current'
-            downloadType: 'single'
-            artifactName: 'release-ipa'
-            downloadPath: '$(Pipeline.Workspace)'
-
-        # Distribute to Firebase App Distribution
-        - script: |
-            npm install -g firebase-tools
-            export GOOGLE_APPLICATION_CREDENTIALS="$(downloadFirebaseKey.secureFilePath)"
-            
-            # Find the .ipa file (name may vary slightly)
-            IPA_PATH=$(find "$(Pipeline.Workspace)/release-ipa" -name "*.ipa" | head -1)
-            
-            firebase appdistribution:distribute \
-              "$IPA_PATH" \
-              --app "$(FIREBASE_APP_ID)" \
-              --release-notes "iOS build $(Build.BuildNumber)"
-          env:
-            GOOGLE_APPLICATION_CREDENTIALS: "$(downloadFirebaseKey.secureFilePath)"
-          displayName: 'Deploy to Firebase'
